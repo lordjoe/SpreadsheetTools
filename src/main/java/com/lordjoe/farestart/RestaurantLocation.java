@@ -23,7 +23,10 @@ public enum RestaurantLocation {
     GUEST_CHEF_NIGHT(261),
     SCHOOL_MEALS(271),
     COMMUNITY_MEALS(281),
+    COMMUNITY_TABLE(-1), // thios is the sum of community_salad,santa_fe,bowls
     ;
+
+    public static final RestaurantLocation[] CommunityTables = { COMMUNITY_SALAD,COMMUNITY_SANTA_FE,    COMMUNITY_BOWLS };
 
     private static Map<Integer, RestaurantLocation> byId = new HashMap<>();
     private static Map<String, RestaurantLocation> byName = new HashMap<>();

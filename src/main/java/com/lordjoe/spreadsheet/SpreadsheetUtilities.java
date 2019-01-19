@@ -96,7 +96,7 @@ public class SpreadsheetUtilities {
         copySheets(newSheet, sheet, true);
     }
 
-    public static void copySheets(Sheet newSheet, Sheet sheet, boolean copyStyle) {
+    public static void copySheets( Sheet sheet,Sheet newSheet, boolean copyStyle) {
         int maxColumnNum = 0;
         Map<Integer, CellStyle> styleMap = (copyStyle)
                 ? new HashMap<Integer, CellStyle>() : null;
@@ -256,11 +256,11 @@ public class SpreadsheetUtilities {
     public static Calendar weekStartFromDate(Calendar d) {
         Calendar ret = Calendar.getInstance();
         ret.setTimeInMillis(d.getTimeInMillis());
-        int i = ret.get(Calendar.DAY_OF_WEEK);
+        int i = ret.get(Calendar.DAY_OF_WEEK) - 1;    // Day of week starts at 1
         DayOfWeek dw =   DayOfWeek.of(i );  // ^(*&)&(*^%(*%( count os 1..7
-        while (dw != DayOfWeek.MONDAY) {
+        while (dw  != DayOfWeek.MONDAY) {
             ret.add(Calendar.DATE, -1);
-            i = ret.get(Calendar.DAY_OF_WEEK);
+            i = (ret.get(Calendar.DAY_OF_WEEK) - 1) % 7;
             dw =   DayOfWeek.of(i );
         }
         return ret;
