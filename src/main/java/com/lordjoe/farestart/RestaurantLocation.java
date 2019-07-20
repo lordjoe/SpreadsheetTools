@@ -51,6 +51,10 @@ public enum RestaurantLocation {
         RestaurantLocation ret = byName.get(name);
         if (ret != null)
             return ret;
+        if(name.startsWith("2100 Caf"))
+            return CAFE_2100;
+        if(name.startsWith("PT Caf"))
+            return PT_CAFE;
         return RestaurantLocation.valueOf(name.replace(" ", "_").toUpperCase());
     }
 

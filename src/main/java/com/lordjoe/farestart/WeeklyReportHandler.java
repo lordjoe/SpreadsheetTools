@@ -1,9 +1,13 @@
 package com.lordjoe.farestart;
 
 import com.lordjoe.spreadsheet.SpreadsheetUtilities;
+import org.apache.poi.openxml4j.util.ZipSecureFile;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.ss.util.CellRangeAddress;
-import org.apache.poi.xddf.usermodel.chart.*;
+import org.apache.poi.xddf.usermodel.chart.XDDFCategoryDataSource;
+import org.apache.poi.xddf.usermodel.chart.XDDFChartData;
+import org.apache.poi.xddf.usermodel.chart.XDDFDataSourcesFactory;
+import org.apache.poi.xddf.usermodel.chart.XDDFNumericalDataSource;
 import org.apache.poi.xssf.usermodel.XSSFChart;
 import org.apache.poi.xssf.usermodel.XSSFDrawing;
 import org.apache.poi.xssf.usermodel.XSSFRichTextString;
@@ -22,7 +26,7 @@ import java.util.*;
 import static com.lordjoe.spreadsheet.SpreadsheetUtilities.*;
 
 /**
- * com.lordjoe.spreadsheet.WeeklyReportHandler
+ * com.lordjoe.farestart.WeeklyReportHandler
  * User: Steve
  * Date: 1/11/19
  */
@@ -45,7 +49,7 @@ public class WeeklyReportHandler {
         Row previous = null;
         Row current = null;
         Iterator<Row> rowIterator = target.rowIterator();
-        int index = 0;
+        int index = 1;
         while (rowIterator.hasNext()) {
             previous = current;
             current = rowIterator.next();
@@ -54,7 +58,7 @@ public class WeeklyReportHandler {
                 copyRowNumbers(previous, current);
             }
             if (current != null)
-                fixFormulas(current);
+                fixFormulas(current, index);
             index++;
 
         }
@@ -113,9 +117,9 @@ public class WeeklyReportHandler {
     };
 
     public static void fixMultiGraphs(Workbook workbook, int sheetsPerGraph) {
-        XSSFSheet graphStart =(XSSFSheet) workbook.getSheet("12 Week Trend");
+        XSSFSheet graphStart = (XSSFSheet) workbook.getSheet("12 Week Trend");
         int graphIndex = workbook.getSheetIndex(graphStart);
-   //     XSSFSheet mySheet = (XSSFSheet)workbook.getSheet(WORKBOOK_INTERVAL_NAMES[sheetsPerGraph]);
+        //     XSSFSheet mySheet = (XSSFSheet)workbook.getSheet(WORKBOOK_INTERVAL_NAMES[sheetsPerGraph]);
 
         for (int i = 0; i < 6; i++) {
             int column = i + 2;
@@ -123,7 +127,7 @@ public class WeeklyReportHandler {
             fixMultiSummaryColumn(graphStart, targets, column);
         }
         SpreadsheetUtilities.evaluateSheet(graphStart);
-        refreshCharts( graphStart);
+        refreshCharts(graphStart);
     }
 
 
@@ -196,24 +200,24 @@ public class WeeklyReportHandler {
         int numOfPoints = 6;
 
         XSSFDrawing originalDrawing = graphStart.createDrawingPatriarch();
-    //    List<XSSFChart> charts = originalDrawing.getCharts();
+        //    List<XSSFChart> charts = originalDrawing.getCharts();
 
         XSSFDrawing patriarch = sheet.createDrawingPatriarch();
         List<XSSFChart> charts = patriarch.getCharts();
 
         for (XSSFChart chart : charts) {
-               try {
-                   // clone
-                   XSSFChart xssfChart = patriarch.importChart(chart);
-                   convertChart(sheet, xssfChart);
-               } catch (IOException e) {
-                   throw new RuntimeException(e);
+            try {
+                // clone
+                XSSFChart xssfChart = patriarch.importChart(chart);
+                convertChart(sheet, xssfChart);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
 
-               } catch (XmlException e) {
-                   throw new RuntimeException(e);
+            } catch (XmlException e) {
+                throw new RuntimeException(e);
 
-               }
-               //                System.out.println("Refreshing Graph " + id);
+            }
+            //                System.out.println("Refreshing Graph " + id);
         }
 
     }
@@ -232,7 +236,6 @@ public class WeeklyReportHandler {
 
     }
 
- 
 
 //    /**
 //     * Imports the chart from the <code>srcChart</code> into this drawing.
@@ -264,24 +267,30 @@ public class WeeklyReportHandler {
     private static void convertChart(XSSFSheet sheet, XSSFChart chart) {
         XSSFRichTextString titleText = chart.getTitleText();
         String name = titleText.getString();
-         CellRangeAddress region = new CellRangeAddress(1, 1, FIRST_COLUMN, LAST_COLUMN);
+        CellRangeAddress region = new CellRangeAddress(1, 1, FIRST_COLUMN, LAST_COLUMN);
         XDDFCategoryDataSource categoriesData = XDDFDataSourcesFactory.fromStringCellRange(sheet, region);
+        int caletoryCount = categoriesData.getPointCount();
 
-        List<XDDFChartData> chartSeries = chart.getChartSeries();
-        for (XDDFChartData chartSery : chartSeries) {
-            List<XDDFChartData.Series> series = chartSery.getSeries();
-            for (XDDFChartData.Series series1 : series) {
-                try {
-                    int row = ChartToLine.get(name) - 1;
-                    XDDFNumericalDataSource<Double> valuesData2 = XDDFDataSourcesFactory.fromNumericCellRange(sheet, new CellRangeAddress(row, row, FIRST_COLUMN, LAST_COLUMN));
-                    series1.replaceData(categoriesData, valuesData2);
-                } catch (Exception e) {
-                    System.out.println("error");
+        try {
+            List<XDDFChartData> chartSeries = chart.getChartSeries();
+            for (XDDFChartData chartSery : chartSeries) {
+                List<XDDFChartData.Series> series = chartSery.getSeries();
+                for (XDDFChartData.Series series1 : series) {
+                    try {
+                        int row = ChartToLine.get(name) - 1;
+                        XDDFNumericalDataSource<Double> valuesData2 = XDDFDataSourcesFactory.fromNumericCellRange(sheet, new CellRangeAddress(row, row, FIRST_COLUMN, LAST_COLUMN));
+                        int valueCount = valuesData2.getPointCount();
+                        series1.replaceData(categoriesData, valuesData2);
+                    } catch (Exception e) {
+                        System.out.println("error");
 
+                    }
                 }
+                chart.plot(chartSery);
+                //         chart.setCommited(true);
             }
-            chart.plot(chartSery);
-            //         chart.setCommited(true);
+        } catch (Exception e) {
+            System.out.println("Could not Convert Chart");
         }
 
     }
@@ -361,8 +370,14 @@ public class WeeklyReportHandler {
     }
 
 
+    public static final SimpleDateFormat AlternateMMDDFormat = new SimpleDateFormat("MM.dd");
     public static final SimpleDateFormat FullYearFormat = new SimpleDateFormat("MM/dd/yyyy");
     public static final SimpleDateFormat MMDDFormat = new SimpleDateFormat("MM/dd");
+    public static final SimpleDateFormat[] POSSIBLE_FORMATS = {
+            MMDDFormat,
+            AlternateMMDDFormat,
+            MMDDFormat
+    };
 
     private static String datesFromSheet(Sheet sheet) {
         Row row = sheet.getRow(0);
@@ -408,21 +423,23 @@ public class WeeklyReportHandler {
 
 
     private static Date dateFromText(String text) {
-        try {
-            Date ret = FullYearFormat.parse(text);
-            return ret;
-        } catch (ParseException e) {
+        ParseException last = null;
+        for (int i = 0; i < POSSIBLE_FORMATS.length; i++) {
             try {
-                Date ret = FullYearFormat.parse(text + "/2018");
+                Date ret = POSSIBLE_FORMATS[i].parse(text);
                 return ret;
-            } catch (ParseException e1) {
-                throw new RuntimeException(e1);
-
+            } catch (ParseException e) {
+                last = e;
             }
         }
+        throw new RuntimeException(last);
     }
 
-    private static void fixFormulas(Row current) {
+    private static void fixFormulas(Row current, int index) {
+        boolean isRatioRow = false;
+        String test = "C" + (index - 2) + "-" + "C" + (index - 1);
+        String TestType = current.getCell(1).getStringCellValue();
+        boolean isDataRow = TestType.length() > 0;
         for (int j = current.getFirstCellNum(); j <= current.getLastCellNum(); j++) {
             Cell cell = current.getCell(j);
             if (cell == null)
@@ -430,12 +447,30 @@ public class WeeklyReportHandler {
             CellType cellType = cell.getCellType();
             if (cellType == CellType.FORMULA) {
                 String text = cell.getCellFormula();
+                if (text.contains(test))
+                    isRatioRow = true;
                 if (text.contains("/")) {
                     String newText = fixDivision(text);
                     cell.setCellFormula(newText);
                 }
             }
 
+        }
+        if (isRatioRow) {
+            Cell cell = current.getCell(9);
+            String newText = fixDivision("(J" + (index - 2) + "-" + "J" + (index - 1) + ")/J" + (index - 2));
+            cell.setCellType(CellType.FORMULA);
+        //    System.out.println("row " + index + " cell J " + newText);
+            cell.setCellFormula(newText);
+        } else {
+            if (isDataRow) {
+                Cell cell = current.getCell(9);
+                cell.setCellType(CellType.FORMULA);
+                String formula = "SUM(C" + index + ":H" + index + ")";
+                cell.setCellFormula(formula);
+         //       System.out.println("row " + index + " cell J " + formula);
+
+            }
         }
     }
 
@@ -487,6 +522,7 @@ public class WeeklyReportHandler {
         Row headers = rowIterator.next();
         while (rowIterator.hasNext()) {
             Row row = rowIterator.next();
+            index++;
             Cell title = row.getCell(0);
             if (title != null) {
                 String txt = title.getStringCellValue();
@@ -501,45 +537,159 @@ public class WeeklyReportHandler {
                     populateNetSalesRow(row, loc, ws);
                 if (typeRow.equalsIgnoreCase("Count"))
                     populateCountRow(row, loc, ws);
+                if (typeRow.equalsIgnoreCase("v LW")) {
+                    SpreadsheetUtilities.setRowHidden(row, false);
+                    fixVersusRow(newSheet, row, index);
+                }
+                if (typeRow.equalsIgnoreCase("v Forecast")) {
+                    SpreadsheetUtilities.setRowHidden(row, false);
+                    fixForcastRow(newSheet, row, index);
+                }
+                if (typeRow.equalsIgnoreCase("v Budget")) {
+                    SpreadsheetUtilities.setRowHidden(row, false);
+                    fixBudgetRow(newSheet, row, index);
+                }
 
             }
 
-            index++;
 
         }
 
     }
 
+    private static void fixForcastRow(Sheet mySheet, Row row, int rownum) {
+        fixBudgetRow(mySheet, row, rownum);
+        fixVersusRow(mySheet, row, rownum);
+
+    }
+
+    private static void fixBudgetRow(Sheet mySheet, Row row, int rownum) {
+        row.getCell(0).setCellType(CellType.BLANK);
+        for (int i = 2; i < 10; i++) {
+            Cell fixed = row.getCell(i);
+            CellType cellType = fixed.getCellType();
+            if (cellType != CellType.NUMERIC) {
+                fixed.setCellType(CellType.NUMERIC);
+                double value = findEarlierValue(mySheet, rownum - 1, i);
+                fixed.setCellValue(value);
+            } else {
+                double value = fixed.getNumericCellValue();
+                if (value == 0) {
+                    value = findEarlierValue(mySheet, rownum - 1, i);
+                    fixed.setCellValue(value);
+                }
+            }
+
+        }
+        fixVersusRow(mySheet, row, rownum);
+
+    }
+
+    private static double findEarlierValue(Sheet mySheet, int rowNum, int columnNum) {
+        double ret = 0;
+        Workbook wb = mySheet.getWorkbook();
+        for (int j = wb.getSheetIndex(mySheet) - 1; j > -1; j--) {
+            Sheet sh = wb.getSheetAt(j);
+            String sheetName = sh.getSheetName();
+            if (sheetName.startsWith("Week")) {
+                Row row = sh.getRow(rowNum);
+                if (row == null)
+                    continue;
+                Cell test = row.getCell(columnNum);
+                if (test == null)
+                    continue;
+                ret = test.getNumericCellValue();
+                if (ret > 0)
+                    return ret;
+            }
+
+        }
+        return ret;
+    }
+
+
+    private static void fixVersusRow(Sheet mySheet, Row row, int rownum) {
+        Row dataRow = mySheet.getRow(rownum - 2);
+        Row vsRow = mySheet.getRow(rownum - 1);
+        for (int i = 2; i < 10; i++) {
+            Cell fixed = row.getCell(i);
+            Cell test = dataRow.getCell(i);
+            Cell vstest = vsRow.getCell(i);
+            if (test == null || vstest == null) {
+                fixed.setCellType(CellType.BLANK);
+            } else {
+                if (isComputable(test) && isComputable(vstest)) {
+                    CellType cellType = test.getCellType();
+                    fixed.setCellType(CellType.FORMULA);
+                    char column = (char) ('A' + i);
+                    fixed.setCellFormula(fixDivision(column, rownum + 1));
+                } else {
+                    fixed.setCellType(CellType.BLANK);
+                }
+
+            }
+
+        }
+
+    }
+
+    public static boolean isComputable(Cell test) {
+        switch (test.getCellType()) {
+            case NUMERIC:
+            case FORMULA:
+                return true;
+            default:
+                return false;
+        }
+    }
+
+
+    private static String fixDivision(char column, int row) {
+        String divisor = "" + column + (row - 1);
+        String numerator = "(" + column + (row - 2) + "-" + divisor + ")";
+        StringBuilder sb = new StringBuilder();
+        sb.append("IF(");
+        sb.append(divisor);
+        sb.append("<=0,\"\",");
+        sb.append(numerator + "/" + divisor);
+        sb.append(")");
+        return sb.toString();
+
+    }
+
+
     private static void populateCountRow(Row row, RestaurantLocation loc, WeeklySales ws) {
+        row.getCell(0).setCellType(CellType.BLANK);
         for (DayOfWeek day : DayOfWeek.values()) {
-            setDailySales(row,   ws,  loc,  day);
+            setDailySales(row, ws, loc, day);
         }
 
         fixTotalFormula(row);
     }
 
-    private static void setDailySales(Row row, WeeklySales ws,RestaurantLocation loc,DayOfWeek day)
-    {
-        DailySales  dailySales = ws.getDailySales(loc,   day);
+    private static void setDailySales(Row row, WeeklySales ws, RestaurantLocation loc, DayOfWeek day) {
+        DailySales dailySales = ws.getDailySales(loc, day);
         int value = day.getValue() + 1;
         Cell cell = row.getCell(value);
         if (dailySales != null && dailySales.hasSales()) {
+            cell.setCellType(CellType.NUMERIC);
             cell.setCellValue(dailySales.getGuests());
-        }
-        else {
+        } else {
             cell.setCellType(CellType.BLANK);
         }
 
     }
-    private static void setDailyNetSales(Row row, WeeklySales ws,RestaurantLocation loc,DayOfWeek day)
-    {
-        DailySales  dailySales = ws.getDailySales(loc,   day);
+
+    private static void setDailyNetSales(Row row, WeeklySales ws, RestaurantLocation loc, DayOfWeek day) {
+        //   row.getCell(0).setCellType(CellType.BLANK);
+        DailySales dailySales = ws.getDailySales(loc, day);
         int value = day.getValue() + 1;
         Cell cell = row.getCell(value);
+
         if (dailySales != null && dailySales.hasSales()) {
+            cell.setCellType(CellType.NUMERIC);
             cell.setCellValue(dailySales.netSales);
-        }
-        else {
+        } else {
             cell.setCellType(CellType.BLANK);
         }
 
@@ -547,7 +697,7 @@ public class WeeklyReportHandler {
 
     private static void populateNetSalesRow(Row row, RestaurantLocation loc, WeeklySales ws) {
         for (DayOfWeek day : DayOfWeek.values()) {
-            setDailyNetSales(row,   ws,  loc,  day);
+            setDailyNetSales(row, ws, loc, day);
         }
         fixTotalFormula(row);
 
@@ -587,21 +737,21 @@ public class WeeklyReportHandler {
                 workbook.setSheetName(index1, name);
                 retained.add(name);
             }
-             String trendName = "Six Week Trend";
-             retained.add(trendName);
-           Sheet SixWeekTrend = workbook.getSheet("Six Week Trend");
+            String trendName = "Six Week Trend";
+            retained.add(trendName);
+            Sheet SixWeekTrend = workbook.getSheet("Six Week Trend");
 //
 //            fixSixWeekGraph(workbook);
             dropUnRetainedSheets(workbook, retained);
 
-             if (retainedReports >= 12) {
+            if (retainedReports >= 12) {
 //                Sheet sheet12 = workbook.cloneSheet(workbook.getSheetIndex(SixWeekTrend));
 //                String name12 = WORKBOOK_INTERVAL_NAMES[2];
 //                workbook.setSheetName(workbook.getSheetIndex(sheet12), name12);
 //                int lastIndex = workbook.getNumberOfSheets() - 1;
 //                workbook.setSheetOrder(name12, lastIndex);
 //                workbook.setSheetHidden(lastIndex, false);
-                 workbook.setSheetName(workbook.getSheetIndex(SixWeekTrend),"12 Week Trend");
+                workbook.setSheetName(workbook.getSheetIndex(SixWeekTrend), "12 Week Trend");
                 fix12WeekGraph(workbook);
             }
 //
@@ -620,7 +770,13 @@ public class WeeklyReportHandler {
 
             FormulaEvaluator evaluator = workbook.getCreationHelper().createFormulaEvaluator();
             evaluator.clearAllCachedResultValues();
-            evaluator.evaluateAll();
+
+            try {
+                evaluator.evaluateAll();
+            } catch (Exception e) {
+                // throw new RuntimeException(e);
+
+            }
 
             System.out.println(sixWeeks.getAbsolutePath());
             FileOutputStream stream = new FileOutputStream(sixWeeks);
@@ -669,7 +825,7 @@ public class WeeklyReportHandler {
         for (int i = 0; i < files.length; i++) {
             File file = files[i];
             String name = file.getName();
-            if (!name.startsWith(SALES_FILE_PREFIX))
+            if (!name.toLowerCase().startsWith(SALES_FILE_PREFIX))
                 continue;
             Date date = dateFromSalesFile(name);
             if (retDate == null || retDate.before(date)) {
@@ -684,8 +840,8 @@ public class WeeklyReportHandler {
     public static final SimpleDateFormat FILE_DATE_FORMAT = new SimpleDateFormat(DAFE_F_S);
     public static final String WORKSHEET_F_S = "MMddyy";
     public static final SimpleDateFormat WORKSHEET_DATE_FORMAT = new SimpleDateFormat(WORKSHEET_F_S);
-    public static final String SALES_FILE_PREFIX = "Sales, Guests, Checks, Entrees by Day ";
-    public static final String WORKSHEET_PREFIX = "Flash Workbook";
+    public static final String SALES_FILE_PREFIX = "Sales, Guests, Checks, Entrees by Day ".toLowerCase();
+    public static final String WORKSHEET_PREFIX = "Flash Workbook".toLowerCase();
     public static final String SUMMARY_PREFIX = "TwelveWeekSummary";
 
     public static Date dateFromSalesFile(String name) {
@@ -709,14 +865,34 @@ public class WeeklyReportHandler {
         for (int i = 0; i < files.length; i++) {
             File file = files[i];
             String name = file.getName();
-            if (!name.startsWith(WORKSHEET_PREFIX))
+            if (!name.toLowerCase().startsWith(WORKSHEET_PREFIX))
                 continue;
             Date date = dateFromWorksheet(name);
             int diff = differenceInDays(salesDate, date);
             if (Math.abs(diff) < 3)
                 return file;
         }
-        throw new IllegalArgumentException("no worksheet found");
+        return getOnlyWorksheet(dir) ;
+    }
+
+    private static File getOnlyWorksheet(File dir) {
+        File[] files = dir.listFiles();
+        File ret = null;
+        for (int i = 0; i < files.length; i++) {
+            File file = files[i];
+            String name = file.getName();
+            if (!name.toLowerCase().startsWith(WORKSHEET_PREFIX))
+                continue;
+             if(name.toLowerCase().endsWith(".xlsx")) {
+                 if(ret == null)
+                     ret = file;
+                 else
+                     throw new IllegalArgumentException("ambiguous worksheet found");
+
+             }
+        }
+        return ret;
+
     }
 
     private static File buildOutputFromSales(File weeklySalesFile) {
@@ -775,6 +951,16 @@ public class WeeklyReportHandler {
 
     public static void main(String[] args) {
         try {
+            /*
+
+            Exception in thread "main" java.lang.RuntimeException: java.io.IOException: Zip bomb detected! The file would exceed the max. ratio of compressed file size to the size of the expanded data.
+This may indicate that the file is used to inflate memory usage and thus could pose a security risk.
+You can adjust this limit via ZipSecureFile.setMinInflateRatio() if you need to work with files which exceed this limit.
+Uncompressed size: 535118, Raw/compressed size: 5341, ratio: 0.009981
+Limits: MIN_INFLATE_RATIO: 0.010000, Entry: xl/styles.xml
+
+             */
+            ZipSecureFile.setMinInflateRatio(0.001); //
             String currentDir = System.getProperty("user.dir");
             File dir = new File(currentDir);
             File weeklySalesFile = findLatestSalesFile(dir);

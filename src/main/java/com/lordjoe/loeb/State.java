@@ -82,7 +82,8 @@ public enum State implements Comparable<State> {
     NEW_BRUNSWICK("New Brunswick","NB",false),
     NOVA_SCOTIA("Nova Scotia","NS",false),
     UNKNOWN_PROVENCE("Unknown Provence", "",false),
-    OVERSEAS("Overseads", "",false),
+    OVERSEAS("Overseas", "",false),
+    UNITED_STATES("United States", "US",false),
     UNKNOWN("Unknown", "",false);
 
     /**

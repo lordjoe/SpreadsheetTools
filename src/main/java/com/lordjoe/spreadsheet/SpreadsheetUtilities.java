@@ -96,7 +96,7 @@ public class SpreadsheetUtilities {
         copySheets(newSheet, sheet, true);
     }
 
-    public static void copySheets( Sheet sheet,Sheet newSheet, boolean copyStyle) {
+    public static void copySheets(Sheet sheet, Sheet newSheet, boolean copyStyle) {
         int maxColumnNum = 0;
         Map<Integer, CellStyle> styleMap = (copyStyle)
                 ? new HashMap<Integer, CellStyle>() : null;
@@ -198,6 +198,22 @@ public class SpreadsheetUtilities {
         return false;
     }
 
+    public static void setRowHidden(Row row, boolean doit) {
+           boolean hidden = isRowHidden(row);
+        if (hidden == doit)
+            return;
+        CellStyle rowStyle = row.getRowStyle();
+        if (rowStyle != null) {
+            rowStyle.setHidden(doit);
+        }
+        if (row instanceof XSSFRow) {
+            XSSFRow xrow = (XSSFRow) row;
+            xrow.getCTRow().setHidden(doit);
+             return;
+        }
+
+    }
+
     public static void copyCell(Cell oldCell, Cell newCell, Map<Integer, CellStyle> styleMap) {
         if (styleMap != null) {
             if (oldCell.getSheet().getWorkbook() == newCell.getSheet().getWorkbook()) {
@@ -257,11 +273,11 @@ public class SpreadsheetUtilities {
         Calendar ret = Calendar.getInstance();
         ret.setTimeInMillis(d.getTimeInMillis());
         int i = ret.get(Calendar.DAY_OF_WEEK) - 1;    // Day of week starts at 1
-        DayOfWeek dw =   DayOfWeek.of(i );  // ^(*&)&(*^%(*%( count os 1..7
-        while (dw  != DayOfWeek.MONDAY) {
+        DayOfWeek dw = DayOfWeek.of(i);  // ^(*&)&(*^%(*%( count os 1..7
+        while (dw != DayOfWeek.MONDAY) {
             ret.add(Calendar.DATE, -1);
             i = (ret.get(Calendar.DAY_OF_WEEK) - 1) % 7;
-            dw =   DayOfWeek.of(i );
+            dw = DayOfWeek.of(i);
         }
         return ret;
     }
