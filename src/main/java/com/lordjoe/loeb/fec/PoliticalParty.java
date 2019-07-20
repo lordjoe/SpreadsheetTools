@@ -9,7 +9,7 @@ import java.util.Map;
  * Date: 7/19/19
  */
 public enum PoliticalParty {
-    DEMOCRAT, REPUBLICAN, LIBERTARIAN, INDEPENDENT,GREEN, SOCIALIST, NONE, OTHER;
+    DEMOCRAT, REPUBLICAN, LIBERTARIAN, INDEPENDENT, GREEN, SOCIALIST, NONE, OTHER;
 
     public static Map<PoliticalParty, Integer> candidateCount = new HashMap<>();
     public static Map<String, Integer> partyCount = new HashMap<>();
@@ -48,20 +48,20 @@ public enum PoliticalParty {
             ret = SOCIALIST;
         if ("GOP".equalsIgnoreCase(name))
             ret = REPUBLICAN;
-          if ("IND".equalsIgnoreCase(name))
+        if ("IND".equalsIgnoreCase(name))
             ret = INDEPENDENT;
         if ("DEM".equalsIgnoreCase(name))
             ret = DEMOCRAT;
         if ("DFL".equalsIgnoreCase(name))
             ret = DEMOCRAT;
 
-        Integer val = candidateCount.get(ret) ;
-        if(val != null)
-            candidateCount.put(ret,val + 1) ;
+        Integer val = candidateCount.get(ret);
+        if (val != null)
+            candidateCount.put(ret, val + 1);
         else
-            candidateCount.put(ret,  1) ;
+            candidateCount.put(ret, 1);
 
-        if(OTHER == ret) {
+        if (OTHER == ret) {
             val = partyCount.get(name);
             if (val != null)
                 partyCount.put(name, val + 1);
@@ -70,6 +70,16 @@ public enum PoliticalParty {
         }
 
         return ret;
+    }
+
+    public boolean isMainstream() {
+        switch (this) {
+            case DEMOCRAT:
+            case REPUBLICAN:
+                return true;
+            default:
+                return false;
+        }
     }
 
 }

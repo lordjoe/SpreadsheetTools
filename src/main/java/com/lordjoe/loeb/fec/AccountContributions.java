@@ -5,7 +5,7 @@ package com.lordjoe.loeb.fec;
  * User: Steve
  * Date: 7/13/19
  */
-public class AccountContributions {
+public class AccountContributions  implements IContributor {
 
     public AccountContributions(FECCommittee accountName) {
         AccountName = accountName;
@@ -35,6 +35,8 @@ public class AccountContributions {
 
         }
         totalContributions += amt;
+
+        AccountName.addContribution(amt);
     }
 
 

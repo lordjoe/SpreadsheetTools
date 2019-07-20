@@ -2,11 +2,10 @@ package com.lordjoe.loeb.fec;
 
 import com.lordjoe.loeb.State;
 
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
-import java.io.LineNumberReader;
+import java.io.*;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import static com.lordjoe.loeb.fec.CandidateCommitteeLink.readLinkssFromFEC;
@@ -183,8 +182,40 @@ public class IndividualContributions {
         }
     }
 
-    public static void main(String[] args) {
+    public static   List<FECContributor>  largestContributorsOfParty(PoliticalParty p, double miniumuContribution) {
+        List<FECContributor> ret = new ArrayList<>() ;
+        for (FECContributor contributor : INSTANCE.contributors) {
+            PoliticalParty prefered = contributor.getPrimaryParty();
+            if(p != prefered)
+                continue;
+            double amt = contributor.getTotalContributions();
+            if(amt < miniumuContribution)
+                continue;
+           ret.add(contributor);
+        }
+        ret.sort(Utilities.ByContributions);
+        return ret;
+    }
+
+    public static void  writeLargestDoners(  PrintWriter px,List<FECContributor>  largest)
+    {
+        for (FECContributor fecContributor : largest) {
+             writeDoner(px,fecContributor);
+        }
+        px.close();
+    }
+
+    private static void writeDoner(PrintWriter px, FECContributor fecContributor) {
+        String s = fecContributor.toTabbedString();
+        px.println(s);
+        String s1 = fecContributor.toContributionString();
+        px.println(s1);
+    }
+
+
+    public static void main(String[] args) throws Exception {
         int index = 0;
+        File output = new File(args[4]);
         File f;
         f = new File(args[index++]);
         readCommitteesFromFEC(f);
@@ -213,8 +244,9 @@ public class IndividualContributions {
 
         determineCommitteeParty();
 
-   //     showSpecificContributors();
+        List<FECContributor>  largest =  largestContributorsOfParty(PoliticalParty.DEMOCRAT,10000);
 
+        writeLargestDoners(new PrintWriter(new FileWriter(output)),largest);
 
     }
 

@@ -8,7 +8,7 @@ import java.util.*;
  * User: Steve
  * Date: 7/15/19
  */
-public class FECCommittee {
+public class FECCommittee   implements IContributor {
     public static final Map<String, FECCommittee> byID = new HashMap<>();
 
     public static FECCommittee getById(String id) {
@@ -47,6 +47,18 @@ public class FECCommittee {
         }
 
         List<FECContributor> contributors = FECContributor.getAllContributors();
+
+        for (FECCommittee presumedDemocraticCommittee : presumedDemocraticCommittees) {
+            if(presumedDemocraticCommittee == null)
+                continue;
+            presumedDemocraticCommittee.setPresumedParty(PoliticalParty.DEMOCRAT);
+        }
+
+        for (FECCommittee presumedDemocraticCommittee : presumedRepublicanCommittees) {
+            if(presumedDemocraticCommittee == null)
+                continue;
+            presumedDemocraticCommittee.setPresumedParty(PoliticalParty.REPUBLICAN);
+        }
 
         assignByAssociation(contributors, partyToCommittee);
      }
@@ -180,11 +192,38 @@ public class FECCommittee {
         byID.put(id, this);
     }
 
+    private int numberContributions = 0;
+    private double totalContributions = 0;
+
+    public int getNumberContributions() {
+        return numberContributions;
+    }
+
+    public double getTotalContributions() {
+        return totalContributions;
+    }
+
+    public void addContribution(double amt)  {
+        if(amt <= 0)
+            return;
+        if(numberContributions == 0) {
+            numberContributions++;
+        }
+        else {
+            numberContributions++;
+
+        }
+        totalContributions += amt;
+    }
+
+
+
     public PoliticalParty getPresumedParty() {
         return presumedParty;
     }
 
     public void setPresumedParty(PoliticalParty presumedParty) {
+
         this.presumedParty = presumedParty;
     }
 
@@ -255,6 +294,8 @@ public class FECCommittee {
             System.out.println(name + " " + byID.size());
         return ret;
     }
+
+
 
     public static void readCommitteesFromFEC(File f) {
         if (f.isDirectory()) {

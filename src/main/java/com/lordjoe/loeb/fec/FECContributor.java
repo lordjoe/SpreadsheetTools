@@ -9,7 +9,7 @@ import java.util.*;
  * User: Steve
  * Date: 7/13/19
  */
-public class FECContributor {
+public class FECContributor implements IContributor {
 
     public static final Map<IdentifyingInformation, FECContributor> byData = new HashMap<>();
     public static final Map<String, FECContributor> byName = new HashMap<>();
@@ -36,6 +36,10 @@ public class FECContributor {
     public final String employer;
     public final String occupation;
     private final Map<FECCommittee, AccountContributions> contributions = new HashMap<>();
+    private double totalContributions = 0;
+    private int numberContributions = 0;
+
+    private PoliticalParty primaryParty;
 
 
     private FECContributor(String firstName, String lastName, State state, String city, String zipcode, String employer, String occupation) {
@@ -50,6 +54,117 @@ public class FECContributor {
         byName.put(name, this);
         IdentifyingInformation id = new IdentifyingInformation(firstName, lastName, state, city, zipcode);
         byData.put(id, this);
+        totalContributions = 0;
+    }
+
+    public PoliticalParty getPrimaryParty() {
+        if (primaryParty == null)
+            determinePrimaryParty();
+        return primaryParty;
+    }
+
+    private FECCommittee getOneCommittee() {
+        for (FECCommittee committee : contributions.keySet()) {
+            return committee;
+
+        }
+        throw new UnsupportedOperationException("Never Get here");
+
+    }
+
+    public String toTabbedString() {
+        StringBuilder sb = new StringBuilder();
+        sb.append(lastName);
+        sb.append(", ");
+        sb.append(firstName);
+        sb.append("\t");
+        sb.append(city);
+        sb.append("\t");
+        sb.append(state);
+        sb.append("\t");
+        sb.append(zipcode);
+        sb.append("\t");
+        sb.append(employer);
+        sb.append("\t");
+        sb.append(occupation);
+        sb.append("\t");
+        sb.append(getPrimaryParty());
+        sb.append("\t");
+        sb.append(getTotalContributions());
+        sb.append("\t");
+        sb.append(getNumberContributions());
+        sb.append("\t");
+
+        return sb.toString();
+    }
+
+    public String toContributionString() {
+        Collection<AccountContributions> values = contributions.values();
+        List<AccountContributions> ctx = new ArrayList<>(values);
+        ctx.sort(new Comparator<AccountContributions>() {
+            @Override
+            public int compare(AccountContributions accountContributions, AccountContributions t1) {
+                return accountContributions.AccountName.name.compareTo(t1.AccountName.name) ;
+            }
+        });
+        StringBuilder sb = new StringBuilder();
+        for (AccountContributions accountContributions : ctx) {
+            sb.append("\t\t\t\t\t");
+            sb.append( accountContributions.AccountName.name);
+            sb.append("\t");
+            sb.append( accountContributions.getTotalContributions() );
+            sb.append("\t");
+            sb.append( accountContributions.getNumberContributions() );
+            sb.append("\n");
+
+        }
+
+        return sb.toString();
+    }
+
+    private void determinePrimaryParty() {
+        switch (contributions.size()) {
+            case 0:
+                primaryParty = PoliticalParty.OTHER;
+                return;
+            case 1:
+                PoliticalParty presumedParty = getOneCommittee().getPresumedParty();
+                primaryParty = presumedParty;
+                return;
+            default:
+                primaryParty = getConsenusParty();
+
+        }
+
+    }
+
+    private PoliticalParty getConsenusParty() {
+        double democratContributopns = 0;
+        double republicanContributopns = 0;
+        for (FECCommittee committee : contributions.keySet()) {
+            PoliticalParty presumedParty = committee.getPresumedParty();
+            if (presumedParty == null)
+                continue;
+            if (!presumedParty.isMainstream())
+                continue;
+            switch (presumedParty) {
+                case DEMOCRAT:
+                    democratContributopns += contributions.get(committee).getTotalContributions();
+                    break;
+                case REPUBLICAN:
+                    republicanContributopns += contributions.get(committee).getTotalContributions();
+                    break;
+            }
+        }
+        if (democratContributopns > 2 * republicanContributopns)
+            return PoliticalParty.DEMOCRAT;
+        if (democratContributopns < 0.5 * republicanContributopns)
+            return PoliticalParty.REPUBLICAN;
+        return PoliticalParty.OTHER;
+    }
+
+    public void setPrimaryParty(PoliticalParty primaryParty) {
+        this.primaryParty = primaryParty;
     }
 
     public AccountContributions getAccountContributions(FECCommittee comm) {
@@ -59,6 +174,25 @@ public class FECContributor {
         }
         contributions.put(comm, v);
         return v;
+    }
+
+
+    public int getNumberContributions() {
+        if (numberContributions == 0) {
+            for (AccountContributions value : contributions.values()) {
+                numberContributions += value.getNumberContributions();
+            }
+        }
+        return numberContributions;
+    }
+
+    public double getTotalContributions() {
+        if (totalContributions == 0) {
+            for (AccountContributions value : contributions.values()) {
+                totalContributions += value.getTotalContributions();
+            }
+        }
+        return totalContributions;
     }
 
 
@@ -74,13 +208,6 @@ public class FECContributor {
         return v.getTotalContributions();
     }
 
-    public double getTotalContributions() {
-        double ret = 0;
-        for (FECCommittee s : contributions.keySet()) {
-            ret += contributions.get(s).getTotalContributions();
-        }
-        return ret;
-    }
 
     public static class IdentifyingInformation {
         public final String firstName;
@@ -94,8 +221,8 @@ public class FECContributor {
             this.lastName = lastName;
             this.state = state;
             this.city = city;
-            if(zipcode.length() > 5)
-                zipcode = zipcode.substring(0,5) ;
+            if (zipcode.length() > 5)
+                zipcode = zipcode.substring(0, 5);
             this.zipcode = zipcode;
         }
 
