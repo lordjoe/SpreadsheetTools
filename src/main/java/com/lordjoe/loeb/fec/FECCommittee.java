@@ -8,7 +8,7 @@ import java.util.*;
  * User: Steve
  * Date: 7/15/19
  */
-public class FECCommittee   implements IContributor {
+public class FECCommittee implements IContributor {
     public static final Map<String, FECCommittee> byID = new HashMap<>();
 
     public static FECCommittee getById(String id) {
@@ -30,6 +30,47 @@ public class FECCommittee   implements IContributor {
 
     public static PoliticalParty[] PARTIES = {PoliticalParty.DEMOCRAT, PoliticalParty.REPUBLICAN};
 
+    public static List<FECCommittee> getCommitteesByContributions() {
+        List<FECCommittee> ret = new ArrayList<>(byID.values());
+        ret.sort(new Comparator<FECCommittee>() {
+            @Override
+            public int compare(FECCommittee fecCommittee, FECCommittee t1) {
+                int ret = Double.compare( t1.getTotalContributions(),fecCommittee.getTotalContributions());
+                if (ret == 0)
+                    ret = fecCommittee.name.compareTo(t1.name);
+                return ret;
+            }
+        });
+
+        return ret;
+    }
+    public static List<FECCommittee> getCommitteesByContributions(double minimumContribution,int maxcommittees) {
+        List<FECCommittee> basis = getCommitteesByContributions();
+        List<FECCommittee> ret = new ArrayList<>();
+        for (FECCommittee fecCommittee : basis) {
+              if(ret.size() >= maxcommittees)
+                  break;
+              if(fecCommittee.getTotalContributions() < minimumContribution)
+                  break;
+              ret.add(fecCommittee);
+        }
+
+        return ret;
+    }
+
+    public static List<FECCommittee> getCommitteesByName() {
+        List<FECCommittee> ret = new ArrayList<>(byID.values());
+        ret.sort(new Comparator<FECCommittee>() {
+            @Override
+            public int compare(FECCommittee fecCommittee, FECCommittee t1) {
+                int ret = fecCommittee.name.compareTo(t1.name);
+                return ret;
+            }
+        });
+
+        return ret;
+    }
+
 
     public static void determineCommitteeParty() {
         addCommitteesFromFile(knownDemocraticCommittees, "KnownDemocraticCommittees.tsv");
@@ -49,19 +90,19 @@ public class FECCommittee   implements IContributor {
         List<FECContributor> contributors = FECContributor.getAllContributors();
 
         for (FECCommittee presumedDemocraticCommittee : presumedDemocraticCommittees) {
-            if(presumedDemocraticCommittee == null)
+            if (presumedDemocraticCommittee == null)
                 continue;
             presumedDemocraticCommittee.setPresumedParty(PoliticalParty.DEMOCRAT);
         }
 
         for (FECCommittee presumedDemocraticCommittee : presumedRepublicanCommittees) {
-            if(presumedDemocraticCommittee == null)
+            if (presumedDemocraticCommittee == null)
                 continue;
             presumedDemocraticCommittee.setPresumedParty(PoliticalParty.REPUBLICAN);
         }
 
         assignByAssociation(contributors, partyToCommittee);
-     }
+    }
 
     private static void assignByAssociation(List<FECContributor> contributors, Map<PoliticalParty, Set<FECCommittee>> partyToCommittee) {
 
@@ -73,7 +114,7 @@ public class FECCommittee   implements IContributor {
             FECCommittee test = byID.get(s);
         }
 
-      }
+    }
 
     public static boolean isKnown(FECCommittee test) {
         if (knownDemocraticCommittees.contains(test))
@@ -182,6 +223,7 @@ public class FECCommittee   implements IContributor {
     public final String name;
     public final String zip;
     private Set<FECCandidate> associatedCandidates = new HashSet<>();
+    private Set<FECContributor> contributors = new HashSet<>();
     private PoliticalParty presumedParty;
 
     public FECCommittee(String id, String name, String zip) {
@@ -199,23 +241,29 @@ public class FECCommittee   implements IContributor {
         return numberContributions;
     }
 
+    public List<FECContributor> getContributors() {
+        return new ArrayList<>(contributors);
+    }
+
+    public void addContributor(FECContributor contributor) {
+        contributors.add(contributor);
+    }
+
     public double getTotalContributions() {
         return totalContributions;
     }
 
-    public void addContribution(double amt)  {
-        if(amt <= 0)
+    public void addContribution(double amt) {
+        if (amt <= 0)
             return;
-        if(numberContributions == 0) {
+        if (numberContributions == 0) {
             numberContributions++;
-        }
-        else {
+        } else {
             numberContributions++;
 
         }
         totalContributions += amt;
     }
-
 
 
     public PoliticalParty getPresumedParty() {
@@ -294,7 +342,6 @@ public class FECCommittee   implements IContributor {
             System.out.println(name + " " + byID.size());
         return ret;
     }
-
 
 
     public static void readCommitteesFromFEC(File f) {

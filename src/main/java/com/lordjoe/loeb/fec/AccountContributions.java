@@ -7,11 +7,15 @@ package com.lordjoe.loeb.fec;
  */
 public class AccountContributions  implements IContributor {
 
-    public AccountContributions(FECCommittee accountName) {
-        AccountName = accountName;
-    }
 
-    public  final FECCommittee AccountName;
+    public  final FECContributor contributor;
+    public  final FECCommittee committee;
+
+    public AccountContributions( FECCommittee committee,FECContributor contributor) {
+        this.contributor = contributor;
+        this.committee = committee;
+        committee.addContributor(contributor);
+    }
 
     private int numberContributions = 0;
     private double totalContributions = 0;
@@ -36,13 +40,13 @@ public class AccountContributions  implements IContributor {
         }
         totalContributions += amt;
 
-        AccountName.addContribution(amt);
+        committee.addContribution(amt);
     }
 
 
     @Override
     public String toString() {
-        return   AccountName.toString() + " "  + totalContributions;
+        return   committee.toString() + " "  + totalContributions;
     }
 
 }

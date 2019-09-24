@@ -87,6 +87,10 @@ public enum State implements Comparable<State> {
     UNKNOWN("Unknown", "",false);
 
     /**
+     * The set of states addressed by abbreviations.
+     */
+    private static final Map<String, State> STATES_BY_ABBR = new HashMap<String, State>();
+    /**
      * The state's name.
      */
     private final String name;
@@ -97,18 +101,6 @@ public enum State implements Comparable<State> {
     private final String abbreviation;
 
     private final boolean USState;
-
-    /**
-     * The set of states addressed by abbreviations.
-     */
-    private static final Map<String, State> STATES_BY_ABBR = new HashMap<String, State>();
-
-    /* static initializer */
-    static {
-        for (State state : values()) {
-            STATES_BY_ABBR.put(state.getAbbreviation(), state);
-        }
-    }
 
     /**
      * Constructs a new state.
@@ -192,6 +184,13 @@ public enum State implements Comparable<State> {
      * @throws SunlightException if the abbreviation is invalid.
      */
     public static State valueOfAbbreviation(final String abbr) {
+        synchronized (STATES_BY_ABBR) {
+            if (STATES_BY_ABBR.isEmpty()) {
+                for (State state : values()) {
+                    STATES_BY_ABBR.put(state.getAbbreviation(), state);
+                }
+            }
+        }
         final State state = STATES_BY_ABBR.get(abbr);
         if (state != null) {
             return state;

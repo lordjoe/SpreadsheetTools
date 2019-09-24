@@ -47,8 +47,10 @@ public class FECContributor implements IContributor {
         this.lastName = lastName;
         this.state = state;
         this.city = city;
+        if(zipcode != null && zipcode.length() > 5)
+            zipcode = zipcode.substring(0,5);
         this.zipcode = zipcode;
-        this.employer = employer;
+        this.employer = FECCompany.cleanUpCompanyName(employer);
         this.occupation = occupation;
         this.name = lastName + " ," + firstName;
         byName.put(name, this);
@@ -69,8 +71,17 @@ public class FECContributor implements IContributor {
 
         }
         throw new UnsupportedOperationException("Never Get here");
+     }
 
-    }
+     public FECCompany getCompany()
+     {
+         return FECCompany.maybeGetCompany(employer);
+     }
+
+     public List<AccountContributions> getContributions()
+     {
+         return new ArrayList<>(contributions.values()) ;
+     }
 
     public String toTabbedString() {
         StringBuilder sb = new StringBuilder();
@@ -104,13 +115,13 @@ public class FECContributor implements IContributor {
         ctx.sort(new Comparator<AccountContributions>() {
             @Override
             public int compare(AccountContributions accountContributions, AccountContributions t1) {
-                return accountContributions.AccountName.name.compareTo(t1.AccountName.name) ;
+                return accountContributions.committee.name.compareTo(t1.committee.name) ;
             }
         });
         StringBuilder sb = new StringBuilder();
         for (AccountContributions accountContributions : ctx) {
             sb.append("\t\t\t\t\t");
-            sb.append( accountContributions.AccountName.name);
+            sb.append( accountContributions.committee.name);
             sb.append("\t");
             sb.append( accountContributions.getTotalContributions() );
             sb.append("\t");
@@ -170,12 +181,35 @@ public class FECContributor implements IContributor {
     public AccountContributions getAccountContributions(FECCommittee comm) {
         AccountContributions v = contributions.get(comm);
         if (v == null) {
-            v = new AccountContributions(comm);
+            v = new AccountContributions(comm,this);
         }
         contributions.put(comm, v);
         return v;
     }
 
+
+    public double getAccountContributions(List<FECCommittee> comm) {
+         double d = 0;
+        for (FECCommittee fecCommittee : comm) {
+            AccountContributions v = contributions.get(fecCommittee);
+            if(v != null)
+                d += v.getTotalContributions();
+        }
+
+        return d;
+    }
+
+
+
+    public int getNumberContributions(List<FECCommittee> comm) {
+        int number = 0;
+        for (FECCommittee fecCommittee : comm) {
+            AccountContributions v = contributions.get(fecCommittee);
+            if(v != null)
+                number += v.getNumberContributions();
+       }
+        return number;
+     }
 
     public int getNumberContributions() {
         if (numberContributions == 0) {
