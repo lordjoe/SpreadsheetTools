@@ -36,8 +36,9 @@ public class BlockAddress {
         this.total = total;
     }
 
+    public static final String DELIMITER="\t";
     public BlockAddress(String s) {
-        String splitString = ",";
+        String splitString = DELIMITER;
         if(s.contains("\t"))
             splitString = "\t";
         String[] items = s.split(splitString);

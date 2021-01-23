@@ -124,7 +124,7 @@ public class PageBuilder {
                     "\n" +
                     "        map.controls[google.maps.ControlPosition.RIGHT_BOTTOM].push(legend);" ;
 
-    private static String buildInitMap(Map<BlockAddress, LatLong> toLatLon) {
+    public static String buildInitMap(Map<BlockAddress, LatLong> toLatLon) {
 
         List<Integer> usedYears = buildUsedYears(toLatLon);
         int startYear = usedYears.get(0);
@@ -178,7 +178,8 @@ public class PageBuilder {
             "green" ,
              "purple" ,
             "pink" ,
-     } ;
+            "orange" ,
+      } ;
 
     public static String yearToUrl(int year) {
          year = year % colors.length;
